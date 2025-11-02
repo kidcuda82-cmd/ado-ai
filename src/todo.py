@@ -54,6 +54,18 @@ def list_tasks() -> None:
             print(f"   {task['description']}")
     print("-" * 50)
 
+def mark_complete(task_id: int) -> None:
+    """Mark a task as complete."""
+    tasks = load_tasks()
+    # Bug: No validation for task_id existence
+    for task in tasks:
+        if task["id"] == task_id:
+            task["completed"] = True
+            save_tasks(tasks)
+            print(f"Marked task {task_id} as complete")
+            return
+    # Silent failure - no error message if task not found
+
 def main():
     """Main function to handle CLI commands."""
     parser = argparse.ArgumentParser(description="Simple TODO list application")
@@ -67,12 +79,18 @@ def main():
     # List tasks command
     subparsers.add_parser("list", help="List all tasks")
     
+    # Complete task command
+    complete_parser = subparsers.add_parser("complete", help="Mark a task as complete")
+    complete_parser.add_argument("task_id", type=int, help="ID of the task to mark as complete")
+    
     args = parser.parse_args()
     
     if args.command == "add":
         add_task(args.title, args.description)
     elif args.command == "list":
         list_tasks()
+    elif args.command == "complete":
+        mark_complete(args.task_id)
     else:
         parser.print_help()
 
