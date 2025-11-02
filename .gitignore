@@ -55,3 +55,6 @@ site/
 
 # Poetry
 poetry.lock
+
+# App specific
+tasks.json
