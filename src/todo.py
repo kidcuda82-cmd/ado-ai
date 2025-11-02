@@ -7,19 +7,27 @@ import argparse
 import json
 import os
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional, TypedDict
+
+class Task(TypedDict):
+    """Type definition for a task."""
+    id: int
+    title: str
+    description: str
+    created_at: str
+    completed: bool
 
 # Constants
 TASKS_FILE = "tasks.json"
 
-def load_tasks() -> List[Dict]:
+def load_tasks() -> List[Task]:
     """Load tasks from JSON file. Create empty file if it doesn't exist."""
     if os.path.exists(TASKS_FILE):
         with open(TASKS_FILE, 'r') as f:
             return json.load(f)
     return []
 
-def save_tasks(tasks: List[Dict]) -> None:
+def save_tasks(tasks: List[Task]) -> None:
     """Save tasks to JSON file."""
     with open(TASKS_FILE, 'w') as f:
         json.dump(tasks, f, indent=2)
@@ -54,17 +62,40 @@ def list_tasks() -> None:
             print(f"   {task['description']}")
     print("-" * 50)
 
-def mark_complete(task_id: int) -> None:
-    """Mark a task as complete."""
+def find_task_by_id(tasks: List[Task], task_id: int) -> Optional[Task]:
+    """Find a task by its ID."""
+    return next((task for task in tasks if task["id"] == task_id), None)
+
+def mark_complete(task_id: int) -> bool:
+    """Mark a task as complete.
+    
+    Args:
+        task_id: The ID of the task to mark as complete.
+        
+    Returns:
+        bool: True if the task was marked complete, False if the task was not found.
+        
+    Raises:
+        ValueError: If task_id is negative.
+    """
+    if task_id < 1:
+        raise ValueError("Task ID must be a positive integer")
+        
     tasks = load_tasks()
-    # Bug: No validation for task_id existence
-    for task in tasks:
-        if task["id"] == task_id:
-            task["completed"] = True
-            save_tasks(tasks)
-            print(f"Marked task {task_id} as complete")
-            return
-    # Silent failure - no error message if task not found
+    task = find_task_by_id(tasks, task_id)
+    
+    if task is None:
+        print(f"Error: Task with ID {task_id} not found")
+        return False
+        
+    if task["completed"]:
+        print(f"Task {task_id} is already marked as complete")
+        return True
+        
+    task["completed"] = True
+    save_tasks(tasks)
+    print(f"Marked task {task_id} as complete")
+    return True
 
 def main():
     """Main function to handle CLI commands."""
