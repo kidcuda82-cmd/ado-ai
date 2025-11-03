@@ -7,11 +7,11 @@ variables:
   python.version: '3.11'
 
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-    addToPath: true
-  displayName: 'Use Python $(python.version)'
+#- task: UsePythonVersion@0
+#  inputs:
+#    versionSpec: '$(python.version)'
+#    addToPath: true
+#  displayName: 'Use Python $(python.version)'
 
 - script: |
     python -m pip install --upgrade pip
