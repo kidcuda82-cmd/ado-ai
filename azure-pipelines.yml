@@ -1,0 +1,62 @@
+trigger:
+  - main
+
+pool: 'ado-ai'
+
+variables:
+  python.version: '3.11'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python.version)'
+    addToPath: true
+  displayName: 'Use Python $(python.version)'
+
+- script: |
+    python -m pip install --upgrade pip
+    pip install -r requirements.txt
+    pip install pytest pytest-cov bandit trivy-plugin
+  displayName: 'Install dependencies'
+
+- script: |
+    pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+  displayName: 'Run pytest with coverage'
+  continueOnError: true
+
+- task: PublishTestResults@2
+  inputs:
+    testResultsFiles: '**/test-results.xml'
+    testRunTitle: 'Python $(python.version)'
+  condition: succeededOrFailed()
+  displayName: 'Publish test results'
+
+- task: PublishCodeCoverageResults@1
+  inputs:
+    codeCoverageTool: Cobertura
+    summaryFileLocation: '$(System.DefaultWorkingDirectory)/**/coverage.xml'
+    reportDirectory: '$(System.DefaultWorkingDirectory)/**/htmlcov'
+  displayName: 'Publish coverage results'
+
+- script: |
+    bandit -r . -f json -o bandit-results.json
+  continueOnError: true
+  displayName: 'Run Bandit security scan'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: '$(System.DefaultWorkingDirectory)/bandit-results.json'
+    artifactName: 'SecurityScanResults'
+  displayName: 'Publish Bandit results'
+
+- script: |
+    pip install trivy
+    trivy fs --format json --output trivy-results.json .
+  continueOnError: true
+  displayName: 'Run Trivy dependency scan'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: '$(System.DefaultWorkingDirectory)/trivy-results.json'
+    artifactName: 'DependencyScanResults'
+  displayName: 'Publish Trivy results'
