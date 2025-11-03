@@ -6,8 +6,46 @@ pool: 'ado-ai'
 
 variables:
   python.version: '3.11'
+  major: '1'
+  minor: '0'
+  patch: '0'
 
 steps:
+- script: |
+    # Calculate version number
+    export VERSION="$(major).$(minor).$(patch)"
+    echo "##vso[task.setvariable variable=VERSION]$VERSION"
+    
+    # Create git tag
+    git tag -a v$VERSION -m "Release version $VERSION"
+    git push origin v$VERSION
+  displayName: 'Create Release Tag'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+- script: |
+    # Generate changelog
+    echo "# Changelog" > CHANGELOG.md
+    echo "## v$(VERSION) ($(date '+%Y-%m-%d'))" >> CHANGELOG.md
+    echo "" >> CHANGELOG.md
+    echo "### Features" >> CHANGELOG.md
+    git log --pretty=format:"* %s" $(git describe --tags --abbrev=0 @^)..@ --no-merges >> CHANGELOG.md
+    
+    # Create release artifacts directory
+    mkdir -p release
+    cp -r src/ tests/ requirements.txt CHANGELOG.md release/
+    
+    # Create release archive
+    tar -czf ado-ai-v$(VERSION).tar.gz release/
+  displayName: 'Generate Changelog and Package Release'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: '$(System.DefaultWorkingDirectory)/ado-ai-v$(VERSION).tar.gz'
+    artifactName: 'release-$(VERSION)'
+  displayName: 'Publish Release Package'
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
 #- task: UsePythonVersion@0
 #  inputs:
 #    versionSpec: '$(python.version)'
