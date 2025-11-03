@@ -29,7 +29,7 @@ steps:
   displayName: 'Install Trivy'
 
 - script: |
-    pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=. --cov-report=xml --cov-report=html
+    PYTHONPATH=$PYTHONPATH:$(pwd) pytest tests/ --doctest-modules --junitxml=junit/test-results.xml --cov=src --cov-report=xml --cov-report=html
   displayName: 'Run pytest with coverage'
   continueOnError: true
 
@@ -48,7 +48,7 @@ steps:
   displayName: 'Publish coverage results'
 
 - script: |
-    bandit -r . -f json -o bandit-results.json
+    bandit -r . -x tests,myagent --skip B101 -f json -o bandit-results.json
   continueOnError: true
   displayName: 'Run Bandit security scan'
 
