@@ -1,0 +1,8 @@
+---[tool.bandit]
+
+exclude_dirs:exclude_dirs = ["tests"]
+
+  - testsskips = ["B101"]
+  - myagent
+skips:
+  - B101
